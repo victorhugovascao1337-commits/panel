@@ -57,12 +57,14 @@
     <b>Gerar nova chave</b>
     <div class="row" style="margin-top:12px">
       <div><label>Plano</label>
-        <select id="g_plano">
+        <select id="g_plano" onchange="onPlano()">
           <option value="INICIANTE">INICIANTE — 700 vídeos</option>
           <option value="INTERMEDIARIO">INTERMEDIARIO — 1500 vídeos</option>
           <option value="AVANCADO">AVANCADO — 2500 vídeos</option>
           <option value="PADRAO">PADRAO — ilimitado</option>
+          <option value="CUSTOM">Personalizado (escolher nº)</option>
         </select></div>
+      <div id="customVidBox" class="hidden"><label>Nº de vídeos</label><input id="g_videos" type="number" min="1" placeholder="ex: 50"></div>
       <div><label>Validade</label>
         <select id="g_val">
           <option value="">Vitalícia (não expira)</option>
@@ -146,8 +148,17 @@ function render(list){
 async function acao(a, chave){ const res=await api(a,{chave}); if(res.ok){ toast("Feito!"); listar(); } else toast(res.motivo||"Erro"); }
 async function excluir(chave){ if(!confirm("Excluir a chave "+chave+"? Isso nao pode ser desfeito.")) return; acao("excluir",chave); }
 
+function onPlano(){
+  const custom = document.getElementById("g_plano").value === "CUSTOM";
+  document.getElementById("customVidBox").classList.toggle("hidden", !custom);
+}
 async function gerar(){
-  const plano=document.getElementById("g_plano").value.trim()||"PADRAO";
+  let plano=document.getElementById("g_plano").value.trim()||"PADRAO";
+  if(plano==="CUSTOM"){
+    const n=parseInt(document.getElementById("g_videos").value,10);
+    if(!n||n<1){ toast("Digite o nº de vídeos"); return; }
+    plano=String(n);   // plano vira o proprio numero -> o ativador aplica esse limite
+  }
   const dias=document.getElementById("g_val").value;
   const obs=document.getElementById("g_obs").value.trim();
   const res=await api("gerar",{plano, dias: dias||null, obs});
