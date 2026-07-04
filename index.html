@@ -58,9 +58,9 @@
     <div class="row" style="margin-top:12px">
       <div><label>Plano</label>
         <select id="g_plano" onchange="onPlano()">
-          <option value="INICIANTE">INICIANTE — 700 vídeos</option>
-          <option value="INTERMEDIARIO">INTERMEDIARIO — 1500 vídeos</option>
-          <option value="AVANCADO">AVANCADO — 2500 vídeos</option>
+          <option value="INICIANTE">INICIANTE — 1.000 vídeos (R$ 87,00)</option>
+          <option value="INTERMEDIARIO">INTERMEDIARIO — 1.500 vídeos (R$ 97,00)</option>
+          <option value="AVANCADO">AVANCADO — 3.000 vídeos (R$ 147,00)</option>
           <option value="PADRAO">PADRAO — ilimitado</option>
           <option value="CUSTOM">Personalizado (escolher nº)</option>
         </select></div>
@@ -89,7 +89,7 @@
     </div>
     <div class="tblwrap">
     <table id="tbl"><thead><tr>
-      <th>Chave</th><th>Plano</th><th>Status</th><th>Validade</th><th>Comprador</th><th>Ações</th>
+      <th>Chave</th><th>Plano</th><th>Status</th><th>Uso (vídeos)</th><th>Validade</th><th>Comprador</th><th>Ações</th>
     </tr></thead><tbody id="tbody"></tbody></table>
     </div>
     <div id="vazio" class="muted center hidden" style="padding:20px">Nenhuma chave ainda. Gere a primeira acima.</div>
@@ -125,6 +125,14 @@ function sair(){ sessionStorage.removeItem("adm_pw"); location.reload(); }
 async function listar(){ const res=await api("listar"); if(res.ok) render(res.licencas); else toast(res.motivo||"Erro"); }
 
 function fmtVal(e){ if(!e) return "Vitalícia"; const d=new Date(e); const dias=Math.ceil((d-new Date())/86400000); return d.toLocaleDateString("pt-BR")+(dias>=0?" ("+dias+"d)":" (expirada)"); }
+function fmtUso(l){
+  if(l.videos_limite==null) return '<span class="muted">ilimitado</span>';
+  const u=l.videos_usados||0, lim=l.videos_limite, pct=Math.min(100,Math.round(u/lim*100));
+  const cor = pct>=100?'#f85149':(pct>=80?'#d29922':'#3fb950');
+  return `<div style="min-width:120px"><b>${u}</b>/${lim}
+    <div style="background:#21262d;border-radius:6px;height:7px;margin-top:3px;overflow:hidden">
+    <div style="width:${pct}%;height:100%;background:${cor}"></div></div></div>`;
+}
 function render(list){
   const tb=document.getElementById("tbody"); tb.innerHTML="";
   document.getElementById("cont").textContent="("+list.length+")";
@@ -134,9 +142,11 @@ function render(list){
       : (l.machine_id ? '<span class="pill pill-uso">em uso</span>' : '<span class="pill pill-livre">livre</span>');
     const tr=document.createElement("tr");
     tr.innerHTML = `<td class="keycell">${l.chave}</td><td>${l.plano}</td><td>${status}</td>
+      <td>${fmtUso(l)}</td>
       <td>${fmtVal(l.expira_em)}</td><td>${l.observacao||"-"}</td>
       <td class="acts">
         <button class="btn-sec" onclick="copiar('${l.chave}')">Copiar</button>
+        <button onclick="renovar('${l.chave}')">Renovar</button>
         ${l.ativo?`<button class="btn-yellow" onclick="acao('desativar','${l.chave}')">Desativar</button>`
                  :`<button onclick="acao('ativar','${l.chave}')">Ativar</button>`}
         ${l.machine_id?`<button class="btn-sec" onclick="acao('liberar','${l.chave}')">Liberar máquina</button>`:""}
@@ -147,6 +157,14 @@ function render(list){
 }
 async function acao(a, chave){ const res=await api(a,{chave}); if(res.ok){ toast("Feito!"); listar(); } else toast(res.motivo||"Erro"); }
 async function excluir(chave){ if(!confirm("Excluir a chave "+chave+"? Isso nao pode ser desfeito.")) return; acao("excluir",chave); }
+async function renovar(chave){
+  const dias=prompt("Renovar "+chave+" — isso ZERA os vídeos usados.\n\nAdicionar quantos dias de validade? (deixe vazio para só zerar o uso)","");
+  if(dias===null) return;
+  const extra={chave}; const n=parseInt(dias,10);
+  if(dias.trim()!=="" && n>0) extra.dias=n;
+  const res=await api("renovar",extra);
+  if(res.ok){ toast("Chave renovada!"); listar(); } else toast(res.motivo||"Erro");
+}
 
 function onPlano(){
   const custom = document.getElementById("g_plano").value === "CUSTOM";
