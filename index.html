@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin - Editor Automa Dark</title>
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--field:#21262d;--border:#30363d;--fg:#e6edf3;--sub:#8b949e;--green:#238636;--greenh:#2ea043;--blue:#58a6ff;--red:#da3633;--yellow:#d29922;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+  a{color:var(--blue)}
+  .wrap{max-width:1050px;margin:0 auto;padding:24px 16px 60px}
+  h1{font-size:20px;margin:0 0 2px} .muted{color:var(--sub);font-size:13px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-top:18px}
+  label{display:block;font-size:12px;color:var(--sub);margin:0 0 4px}
+  input,select{width:100%;background:var(--field);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:9px 10px;font-size:14px;outline:none}
+  input:focus,select:focus{border-color:var(--green)}
+  button{border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;background:var(--green)}
+  button:hover{background:var(--greenh)} button:disabled{opacity:.5;cursor:default}
+  .btn-sec{background:var(--field);border:1px solid var(--border)} .btn-sec:hover{background:#2d333b}
+  .btn-red{background:var(--red)} .btn-red:hover{background:#f85149}
+  .btn-yellow{background:var(--yellow);color:#111} .btn-yellow:hover{background:#e3b341}
+  .row{display:flex;gap:12px;flex-wrap:wrap} .row>div{flex:1;min-width:150px}
+  table{width:100%;border-collapse:collapse;margin-top:6px} th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--border);font-size:13px;white-space:nowrap}
+  th{color:var(--sub);font-weight:600;font-size:12px} .tblwrap{overflow-x:auto}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+  .pill-livre{background:rgba(35,134,54,.2);color:#3fb950} .pill-uso{background:rgba(88,166,255,.15);color:var(--blue)}
+  .pill-off{background:rgba(218,54,51,.18);color:#f85149}
+  .keycell{font-family:Consolas,monospace;font-weight:700;letter-spacing:.5px}
+  .acts button{padding:5px 9px;font-size:11px;margin-right:4px}
+  #novachave{font-family:Consolas,monospace;font-size:20px;font-weight:700;color:#3fb950;letter-spacing:1px}
+  .hidden{display:none} .center{text-align:center}
+  .login{max-width:380px;margin:12vh auto 0}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 18px;box-shadow:0 6px 24px rgba(0,0,0,.5);opacity:0;transition:.25s}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="loginView" class="wrap">
+  <div class="login card">
+    <h1>🔒 Painel de Licenças</h1>
+    <p class="muted">Editor Automa Dark — acesso restrito</p>
+    <div style="margin-top:14px"><label>Senha de administrador</label>
+      <input id="senha" type="password" placeholder="digite a senha" onkeydown="if(event.key==='Enter')entrar()"></div>
+    <div id="loginErr" class="muted" style="color:#f85149;min-height:16px;margin-top:8px"></div>
+    <button style="width:100%;margin-top:6px" onclick="entrar()">Entrar</button>
+  </div>
+</div>
+
+<div id="appView" class="wrap hidden">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div><h1>🎬 Painel de Licenças</h1><span class="muted">Editor Automa Dark</span></div>
+    <button class="btn-sec" onclick="sair()">Sair</button>
+  </div>
+
+  <div class="card">
+    <b>Gerar nova chave</b>
+    <div class="row" style="margin-top:12px">
+      <div><label>Plano</label>
+        <select id="g_plano">
+          <option value="INICIANTE">INICIANTE — 700 vídeos</option>
+          <option value="INTERMEDIARIO">INTERMEDIARIO — 1500 vídeos</option>
+          <option value="AVANCADO">AVANCADO — 2500 vídeos</option>
+          <option value="PADRAO">PADRAO — ilimitado</option>
+        </select></div>
+      <div><label>Validade</label>
+        <select id="g_val">
+          <option value="">Vitalícia (não expira)</option>
+          <option value="7">7 dias</option>
+          <option value="30">30 dias</option>
+          <option value="90">90 dias</option>
+          <option value="365">1 ano</option>
+        </select></div>
+      <div><label>Comprador / observação</label><input id="g_obs" placeholder="nome ou e-mail (opcional)"></div>
+      <div style="flex:0 0 auto;display:flex;align-items:flex-end"><button onclick="gerar()">Gerar chave</button></div>
+    </div>
+    <div id="novaBox" class="hidden center" style="margin-top:14px;padding:14px;background:var(--field);border-radius:8px">
+      <span id="novachave"></span>
+      <button class="btn-sec" style="margin-left:10px" onclick="copiar(document.getElementById('novachave').textContent)">Copiar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <b>Chaves <span id="cont" class="muted"></span></b>
+      <button class="btn-sec" onclick="listar()">↻ Atualizar</button>
+    </div>
+    <div class="tblwrap">
+    <table id="tbl"><thead><tr>
+      <th>Chave</th><th>Plano</th><th>Status</th><th>Validade</th><th>Comprador</th><th>Ações</th>
+    </tr></thead><tbody id="tbody"></tbody></table>
+    </div>
+    <div id="vazio" class="muted center hidden" style="padding:20px">Nenhuma chave ainda. Gere a primeira acima.</div>
+  </div>
+  <p class="muted center" style="margin-top:18px">Mantenha este arquivo só no seu computador. A senha protege o acesso.</p>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const SUPA_URL = "https://arurebbmfnjywrnlwfzc.supabase.co";
+const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFydXJlYmJtZm5qeXdybmx3ZnpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODQ3MjAsImV4cCI6MjA5ODc2MDcyMH0.7fMLfumwW0gZmBzPS6iTWGBB4vpyIyGGkvR9j6CRSzc";
+const FN = SUPA_URL + "/functions/v1/admin";
+
+function senhaAtual(){ return sessionStorage.getItem("adm_pw") || ""; }
+async function api(acao, extra){
+  const r = await fetch(FN, {method:"POST", headers:{apikey:ANON,Authorization:"Bearer "+ANON,"Content-Type":"application/json"},
+    body: JSON.stringify(Object.assign({senha:senhaAtual(), acao}, extra||{}))});
+  return r.json();
+}
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1800); }
+function copiar(txt){ navigator.clipboard.writeText(txt).then(()=>toast("Copiado: "+txt)); }
+
+async function entrar(){
+  const pw=document.getElementById("senha").value;
+  sessionStorage.setItem("adm_pw", pw);
+  const res=await api("listar");
+  if(res.ok){ document.getElementById("loginView").classList.add("hidden"); document.getElementById("appView").classList.remove("hidden"); render(res.licencas); }
+  else { document.getElementById("loginErr").textContent = res.motivo||"Erro"; sessionStorage.removeItem("adm_pw"); }
+}
+function sair(){ sessionStorage.removeItem("adm_pw"); location.reload(); }
+
+async function listar(){ const res=await api("listar"); if(res.ok) render(res.licencas); else toast(res.motivo||"Erro"); }
+
+function fmtVal(e){ if(!e) return "Vitalícia"; const d=new Date(e); const dias=Math.ceil((d-new Date())/86400000); return d.toLocaleDateString("pt-BR")+(dias>=0?" ("+dias+"d)":" (expirada)"); }
+function render(list){
+  const tb=document.getElementById("tbody"); tb.innerHTML="";
+  document.getElementById("cont").textContent="("+list.length+")";
+  document.getElementById("vazio").classList.toggle("hidden", list.length>0);
+  for(const l of list){
+    const status = !l.ativo ? '<span class="pill pill-off">desativada</span>'
+      : (l.machine_id ? '<span class="pill pill-uso">em uso</span>' : '<span class="pill pill-livre">livre</span>');
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td class="keycell">${l.chave}</td><td>${l.plano}</td><td>${status}</td>
+      <td>${fmtVal(l.expira_em)}</td><td>${l.observacao||"-"}</td>
+      <td class="acts">
+        <button class="btn-sec" onclick="copiar('${l.chave}')">Copiar</button>
+        ${l.ativo?`<button class="btn-yellow" onclick="acao('desativar','${l.chave}')">Desativar</button>`
+                 :`<button onclick="acao('ativar','${l.chave}')">Ativar</button>`}
+        ${l.machine_id?`<button class="btn-sec" onclick="acao('liberar','${l.chave}')">Liberar máquina</button>`:""}
+        <button class="btn-red" onclick="excluir('${l.chave}')">Excluir</button>
+      </td>`;
+    tb.appendChild(tr);
+  }
+}
+async function acao(a, chave){ const res=await api(a,{chave}); if(res.ok){ toast("Feito!"); listar(); } else toast(res.motivo||"Erro"); }
+async function excluir(chave){ if(!confirm("Excluir a chave "+chave+"? Isso nao pode ser desfeito.")) return; acao("excluir",chave); }
+
+async function gerar(){
+  const plano=document.getElementById("g_plano").value.trim()||"PADRAO";
+  const dias=document.getElementById("g_val").value;
+  const obs=document.getElementById("g_obs").value.trim();
+  const res=await api("gerar",{plano, dias: dias||null, obs});
+  if(res.ok){ document.getElementById("novaBox").classList.remove("hidden"); document.getElementById("novachave").textContent=res.chave; document.getElementById("g_obs").value=""; listar(); }
+  else toast(res.motivo||"Erro");
+}
+</script>
+</body>
+</html>
